@@ -36,6 +36,17 @@ and learn about bot development.
    ```bash
    poetry run python -m telegram_reader.main
    ```
+   [3 lines of post-context]
+
+### Example in Action
+
+Below you can see Home Agent in use:
+
+**Telegram request:**
+![Telegram request](docs/request.png)
+
+**App response:**
+![App response](docs/app-stdout.png)
 
 ## Contributing
 
