@@ -37,9 +37,12 @@ def start_opencode_server():
 
 
 def send_to_opencode(message_text: str) -> str:
+    print(f"Got: {message_text}")
     url = f"http://{OPENCODE_HOST}:{OPENCODE_PORT}/session"
     r = requests.post(url, json={})
+
     if r.status_code != 200:
+        print(f"Can´t talk to opencode server: {r.status_code} {r.text}")
         return "Failed to create session"
     session_id = r.json()["id"]
 
@@ -49,12 +52,20 @@ def send_to_opencode(message_text: str) -> str:
         json={"parts": [{"type": "text", "text": message_text}]},
     )
     if r.status_code != 200:
+        print(f"Failed to send message: {r.status_code} {r.text}")
         return "Failed to send message"
 
     data = r.json()
     parts = data.get("parts", [])
+
     if parts:
-        return parts[-1].get("text", "No response")
+        answer = parts[-2].get("text", "Couldn't fetch answer")
+        cost = parts[-1].get("cost", "Couldn't fetch costs")
+        tokens = parts[-1].get("tokens", "Couldn't fetch tokens")
+        print(f"Cost: {cost}, Tokens: {tokens}")
+        print(f"Answer: {answer}")
+        return answer
+
     return "No response"
 
 
@@ -66,6 +77,7 @@ def handle_message(message):
     user_msg = message.text
     chat_id = message.chat.id
 
+    bot.send_message(chat_id, "Working on it...")
     print(f"Message from {message.from_user.first_name}: {user_msg}")
 
     response = send_to_opencode(user_msg)
