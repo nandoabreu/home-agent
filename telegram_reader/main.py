@@ -1,3 +1,5 @@
+import os
+import glob
 import subprocess
 import threading
 import time
@@ -8,6 +10,40 @@ from telegram_reader.config import settings
 
 OPENCODE_PORT = 4096
 OPENCODE_HOST = "127.0.0.1"
+OPENCODE_CONTEXT_DIR = os.path.expanduser("~/.opencode")
+OPENCODE_CONTEXT_FILE = os.path.join(OPENCODE_CONTEXT_DIR, ".opencode_context.json")
+MAX_CONTEXT_FILES = 5
+
+
+def rotate_context_files():
+    if not os.path.exists(OPENCODE_CONTEXT_DIR):
+        os.makedirs(OPENCODE_CONTEXT_DIR, mode=0o700)
+        return
+
+    existing = sorted(
+        glob.glob(os.path.join(OPENCODE_CONTEXT_DIR, ".opencode_context*.json"))
+    )
+    for old_file in existing[:-MAX_CONTEXT_FILES]:
+        try:
+            os.remove(old_file)
+        except OSError:
+            pass
+
+    current = OPENCODE_CONTEXT_FILE
+    if os.path.exists(current):
+        idx = 1
+        while os.path.exists(current):
+            idx += 1
+            current = os.path.join(
+                OPENCODE_CONTEXT_DIR, f".opencode_context{idx}.json"
+            )
+        try:
+            os.rename(OPENCODE_CONTEXT_FILE, current)
+        except OSError:
+            pass
+
+    if os.path.exists(OPENCODE_CONTEXT_FILE):
+        os.chmod(OPENCODE_CONTEXT_FILE, 0o600)
 
 
 def wait_for_opencode_server(timeout: int = 30) -> bool:
@@ -25,8 +61,10 @@ def wait_for_opencode_server(timeout: int = 30) -> bool:
 
 
 def start_opencode_server():
+    rotate_context_files()
     proc = subprocess.Popen(
         ["opencode", "serve", "--port", str(OPENCODE_PORT), "--hostname", OPENCODE_HOST],
+        env={**os.environ, "OPENCODE_CONTEXT_DIR": OPENCODE_CONTEXT_DIR},
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )
