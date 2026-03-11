@@ -1,15 +1,40 @@
 import subprocess
 import time
+from pathlib import Path
+import shlex
+
 import requests
 import telebot
 
 from telegram_reader.config import settings
 
 _sessions: dict[int, str] = {}
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 
 def _base_url() -> str:
     return settings.opencode_server_url.rstrip("/")
+
+
+def _admin_user_ids() -> set[int]:
+    raw_ids = settings.telegram_admin_user_ids.strip()
+    if not raw_ids:
+        return set()
+    return {int(part.strip()) for part in raw_ids.split(",") if part.strip()}
+
+
+def _is_admin_user(user_id: int | None) -> bool:
+    return user_id is not None and user_id in _admin_user_ids()
+
+
+def restart_service() -> None:
+    command = shlex.split(settings.restart_command)
+    subprocess.Popen(
+        command,
+        cwd=PROJECT_ROOT,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
 
 
 def wait_for_opencode_server(timeout: int = 30) -> bool:
@@ -87,6 +112,26 @@ def send_to_opencode(chat_id: int, message_text: str) -> str:
 
 
 bot = telebot.TeleBot(settings.telegram_bot_token)
+
+
+@bot.message_handler(commands=["restart"])
+def handle_restart(message):
+    chat_id = message.chat.id
+    user_id = message.from_user.id if message.from_user else None
+
+    if not _is_admin_user(user_id):
+        print(f"Ignored restart request from unauthorised user {user_id}")
+        return
+
+    bot.send_message(chat_id, "Restarting service now...")
+    restart_service()
+
+
+@bot.message_handler(commands=["whoami"])
+def handle_whoami(message):
+    chat_id = message.chat.id
+    user_id = message.from_user.id if message.from_user else None
+    bot.send_message(chat_id, f"Your Telegram user id is: {user_id}")
 
 
 @bot.message_handler(func=lambda message: True)
