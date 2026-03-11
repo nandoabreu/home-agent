@@ -1,0 +1,16 @@
+[Unit]
+Description=Home Agent Telegram Bot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/repos/home-agent
+EnvironmentFile=%h/repos/home-agent/.env
+Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=%h/.local/bin/poetry run python -m telegram_reader.main
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

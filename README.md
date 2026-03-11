@@ -36,7 +36,66 @@ and learn about bot development.
    ```bash
    poetry run python -m telegram_reader.main
    ```
-   [3 lines of post-context]
+
+## Restarting the service remotely
+
+This project can be installed as a user-scoped `systemd` service and restarted with a Telegram command.
+
+### Environment variables
+
+Add these values to your `.env` file:
+
+```bash
+TELEGRAM_BOT_TOKEN=your-token-here
+TELEGRAM_ADMIN_USER_IDS=123456789
+RESTART_COMMAND=bash ./scripts/restart-home-agent.sh
+```
+
+- `TELEGRAM_ADMIN_USER_IDS` is a comma-separated list of Telegram user IDs allowed to run `/restart`
+- `RESTART_COMMAND` is the fixed local script that restarts the service
+
+You can discover your Telegram user ID by sending this command to the bot:
+
+```text
+/whoami
+```
+
+### Install the user service
+
+Copy the service file into your user `systemd` directory:
+
+```bash
+mkdir -p ~/.config/systemd/user
+cp systemd/home-agent.service ~/.config/systemd/user/home-agent.service
+```
+
+If Poetry is installed elsewhere, update `ExecStart` in `systemd/home-agent.service` first.
+
+The provided service file also loads environment variables from `%h/repos/home-agent/.env`.
+
+Then enable and start the service:
+
+```bash
+systemctl --user daemon-reload
+systemctl --user enable --now home-agent.service
+```
+
+To keep user services available after logout, enable lingering once:
+
+```bash
+loginctl enable-linger "$USER"
+```
+
+### Restart via Telegram
+
+Send this command to the bot:
+
+```text
+/restart
+```
+
+If your Telegram user ID is listed in `TELEGRAM_ADMIN_USER_IDS`, the bot will run the fixed restart script and `systemd --user` will restart the service.
+If the user is not authorised, the bot stays silent and only logs the attempt locally.
 
 ### Example in Action
 
