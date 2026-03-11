@@ -1,17 +1,21 @@
 import subprocess
-import threading
 import time
 import requests
 import telebot
 
 from telegram_reader.config import settings
 
-OPENCODE_PORT = 4096
-OPENCODE_HOST = "127.0.0.1"
+# In-memory mapping of Telegram chat_id -> OpenCode session_id.
+# Each chat gets its own persistent session so the model retains conversation history.
+_sessions: dict[int, str] = {}
+
+
+def _base_url() -> str:
+    return settings.opencode_server_url.rstrip("/")
 
 
 def wait_for_opencode_server(timeout: int = 30) -> bool:
-    url = f"http://{OPENCODE_HOST}:{OPENCODE_PORT}/global/health"
+    url = f"{_base_url()}/global/health"
     start = time.time()
     while time.time() - start < timeout:
         try:
@@ -25,8 +29,14 @@ def wait_for_opencode_server(timeout: int = 30) -> bool:
 
 
 def start_opencode_server():
+    from urllib.parse import urlparse
+
+    parsed = urlparse(settings.opencode_server_url)
+    host = parsed.hostname or "127.0.0.1"
+    port = parsed.port or 4096
+
     proc = subprocess.Popen(
-        ["opencode", "serve", "--port", str(OPENCODE_PORT), "--hostname", OPENCODE_HOST],
+        ["opencode", "serve", "--port", str(port), "--hostname", host],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )
@@ -36,21 +46,30 @@ def start_opencode_server():
     return proc
 
 
-def send_to_opencode(message_text: str) -> str:
-    print(f"Got: {message_text}")
-    url = f"http://{OPENCODE_HOST}:{OPENCODE_PORT}/session"
-    r = requests.post(url, json={})
+def _get_or_create_session(chat_id: int) -> str:
+    """Return the existing OpenCode session for this chat, or create a new one."""
+    if chat_id in _sessions:
+        return _sessions[chat_id]
 
-    if r.status_code != 200:
-        print(f"Can´t talk to opencode server: {r.status_code} {r.text}")
-        return "Failed to create session"
+    r = requests.post(f"{_base_url()}/session", json={})
+    r.raise_for_status()
     session_id = r.json()["id"]
+    _sessions[chat_id] = session_id
+    print(f"New session {session_id} created for chat {chat_id}")
+    return session_id
 
-    msg_url = f"http://{OPENCODE_HOST}:{OPENCODE_PORT}/session/{session_id}/message"
+
+def send_to_opencode(chat_id: int, message_text: str) -> str:
+    print(f"[chat={chat_id}] Got: {message_text}")
+
+    session_id = _get_or_create_session(chat_id)
+    msg_url = f"{_base_url()}/session/{session_id}/message"
+
     r = requests.post(
         msg_url,
         json={"parts": [{"type": "text", "text": message_text}]},
     )
+
     if r.status_code != 200:
         print(f"Failed to send message: {r.status_code} {r.text}")
         return "Failed to send message"
@@ -58,15 +77,19 @@ def send_to_opencode(message_text: str) -> str:
     data = r.json()
     parts = data.get("parts", [])
 
-    if parts:
-        answer = parts[-2].get("text", "Couldn't fetch answer")
-        cost = parts[-1].get("cost", "Couldn't fetch costs")
-        tokens = parts[-1].get("tokens", "Couldn't fetch tokens")
-        print(f"Cost: {cost}, Tokens: {tokens}")
-        print(f"Answer: {answer}")
-        return answer
+    # Find the last text part as the assistant answer
+    answer = next(
+        (p["text"] for p in reversed(parts) if p.get("type") == "text" and p.get("text")),
+        "No response",
+    )
 
-    return "No response"
+    # Log usage metadata from the last step part if available
+    step = next((p for p in reversed(parts) if p.get("type") == "step-finish"), None)
+    if step:
+        print(f"Cost: {step.get('cost')}, Tokens: {step.get('tokens')}")
+
+    print(f"Answer: {answer}")
+    return answer
 
 
 bot = telebot.TeleBot(settings.telegram_bot_token)
@@ -74,20 +97,20 @@ bot = telebot.TeleBot(settings.telegram_bot_token)
 
 @bot.message_handler(func=lambda message: True)
 def handle_message(message):
-    user_msg = message.text
     chat_id = message.chat.id
+    user_msg = message.text
 
     bot.send_message(chat_id, "Working on it...")
     print(f"Message from {message.from_user.first_name}: {user_msg}")
 
-    response = send_to_opencode(user_msg)
+    response = send_to_opencode(chat_id, user_msg)
     bot.send_message(chat_id, response)
 
 
 if __name__ == "__main__":
     print("Starting opencode server...")
     opencode_proc = start_opencode_server()
-    print(f"Opencode server running at http://{OPENCODE_HOST}:{OPENCODE_PORT}")
+    print(f"Opencode server running at {settings.opencode_server_url}")
 
     print("Starting Telegram bot...")
     bot.polling()
