@@ -1,13 +1,15 @@
 # Home Agent Telegram Bot
 
-Welcome to my new project, the **Home Agent project**! This is an open-source Telegram bot designed to help automate tasks,
-and learn about bot development.
+Welcome to the **Home Agent project**! This is an open-source Telegram bot built with Python and Poetry, designed to automate tasks and serve as a learning platform for bot development.
+
+It is an educational and functional project, with the possibility to install as a systemd service and restart remotely via bot command.
 
 ## Features
 
 - Built with Python and Poetry
 - Easily extendable and open for contributions
 - Designed for beginners and enthusiasts
+- Can be installed as a systemd service and restarted remotely via Telegram commands
 
 ## Getting Started
 
