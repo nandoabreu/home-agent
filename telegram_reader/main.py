@@ -58,11 +58,16 @@ def start_opencode_server():
     host = parsed.hostname or "127.0.0.1"
     port = parsed.port or 4096
 
+    log_file_path = PROJECT_ROOT / "opencode_server.log"
+    pointer = open(Path(log_file_path), "wb") if settings.debug_mode else subprocess.DEVNULL
+
     proc = subprocess.Popen(
         ["opencode", "serve", "--port", str(port), "--hostname", host],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
+        stdout=pointer,
+        stderr=subprocess.STDOUT,
+        cwd=PROJECT_ROOT,
     )
+    
     if not wait_for_opencode_server():
         proc.kill()
         raise RuntimeError("Opencode server failed to start")

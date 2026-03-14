@@ -15,7 +15,7 @@ and learn about bot development.
 
 - Python 3.11+ (not tested, but expected to run on 3.9+)
 - Basic knowledge of Poetry
-- [Opencode AI cli](hhttps://opencode.ai/)
+- [Opencode AI cli](https://opencode.ai/)
 - A Telegram bot created (see below)
 
 ### Creating a Telegram Bot
