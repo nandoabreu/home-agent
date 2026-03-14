@@ -82,13 +82,11 @@ def _get_or_create_session(chat_id: int) -> str:
     r.raise_for_status()
     session_id = r.json()["id"]
     _sessions[chat_id] = session_id
-    print(f"New session {session_id} created for chat {chat_id}")
+    print(f"New session created for chat {chat_id}: {session_id}")
     return session_id
 
 
 def send_to_opencode(chat_id: int, message_text: str) -> str:
-    print(f"[chat={chat_id}] Got: {message_text}")
-
     session_id = _get_or_create_session(chat_id)
 
     msg_url = f"{_base_url()}/session/{session_id}/message"
@@ -97,15 +95,15 @@ def send_to_opencode(chat_id: int, message_text: str) -> str:
         json={"parts": [{"type": "text", "text": message_text}]},
     )
     if r.status_code != 200:
-        print(f"Failed to send message: {r.status_code} {r.text}")
-        return "Failed to send message"
+        print(f"Failed to send to opencode server: {r.status_code} {r.text}")
+        return "Failed to send to opencode server"
 
     data = r.json()
     parts = data.get("parts", [])
 
     answer = next(
         (p["text"] for p in reversed(parts) if p.get("type") == "text" and p.get("text")),
-        "No response",
+        "No response from opencode server",
     )
 
     step = next((p for p in reversed(parts) if p.get("type") == "step-finish"), None)
@@ -145,10 +143,11 @@ def handle_message(message):
     user_msg = message.text
 
     bot.send_message(chat_id, "Working on it...")
-    print(f"Message from {message.from_user.first_name}: {user_msg}")
+    print(f"Message from {message.from_user.id} ({message.from_user.first_name}): {user_msg}")
 
     response = send_to_opencode(chat_id, user_msg)
-    bot.send_message(chat_id, response)
+    res = bot.send_message(chat_id, response)
+    print(f"Telegram Bot response: {res}")
 
 
 if __name__ == "__main__":
