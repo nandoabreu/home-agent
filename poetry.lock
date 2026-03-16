@@ -412,14 +412,14 @@ windows-terminal = ["colorama (>=0.4.6)"]
 
 [[package]]
 name = "pytelegrambotapi"
-version = "4.31.0"
+version = "4.32.0"
 description = "Python Telegram bot API."
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "pytelegrambotapi-4.31.0-py3-none-any.whl", hash = "sha256:869d46b658a02c56f3aded6ab3a4b453e8f6f3927e36e32c91dbd97ae9d03f28"},
-    {file = "pytelegrambotapi-4.31.0.tar.gz", hash = "sha256:797cd0a9a99cc2d6672b082ea0cd5853e1c8b5ac9b76b257c160d6142049b66a"},
+    {file = "pytelegrambotapi-4.32.0-py3-none-any.whl", hash = "sha256:ed973b302bc7014d06a7ad3cadd76a02e79498ff1e2c4be9e5ca96b0ba352d63"},
+    {file = "pytelegrambotapi-4.32.0.tar.gz", hash = "sha256:01d36a5c0df9d1293fc768a802542ad7f4aeb3fcd5d1574b5116d935b3a3313a"},
 ]
 
 [package.dependencies]
@@ -542,4 +542,4 @@ zstd = ["backports-zstd (>=1.0.0) ; python_version < \"3.14\""]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11"
-content-hash = "bf4a52ec92da932dd62e9b72f96f2317579fe43ae043dc6a9e6cc374880b42e3"
+content-hash = "6497e70dcdc066ed34b740b23fe401488fa01ba1f636f6a01762ded6df949989"
