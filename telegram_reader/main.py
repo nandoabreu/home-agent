@@ -128,7 +128,7 @@ def handle_restart(message):
         print(f"Ignored restart request from unauthorised user {user_id}")
         return
 
-    bot.send_message(chat_id, "Restarting service now...")
+    bot.send_message(chat_id, "Restarting service now... Resume our chat in around 5 seconds.")
     restart_service()
 
 
