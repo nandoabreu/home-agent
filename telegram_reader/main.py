@@ -124,7 +124,7 @@ def handle_restart(message):
     chat_id = message.chat.id
     user_id = message.from_user.id if message.from_user else None
 
-    if not _is_admin_user(user_id):
+    if not (user_id and _is_admin_user(user_id)):
         print(f"Ignored restart request from unauthorised user {user_id}")
         return
 
