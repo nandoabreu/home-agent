@@ -110,7 +110,7 @@ def send_to_opencode(chat_id: int, message_text: str) -> str:
     if step:
         print(f"Cost: {step.get('cost')}, Tokens: {step.get('tokens')}")
 
-    print(f"Answer: {answer}")
+    print(f"Opencode answer: {answer}")
     return answer
 
 
@@ -147,7 +147,7 @@ def handle_message(message):
 
     response = send_to_opencode(chat_id, user_msg)
     res = bot.send_message(chat_id, response)
-    print(f"Telegram Bot response: {res}")
+    print(f"Telegram Bot responded: {res.text}")
 
 
 if __name__ == "__main__":
