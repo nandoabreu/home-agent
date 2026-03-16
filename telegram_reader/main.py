@@ -23,8 +23,10 @@ def _admin_user_ids() -> set[int]:
     return {int(part.strip()) for part in raw_ids.split(",") if part.strip()}
 
 
-def _is_admin_user(user_id: int | None) -> bool:
-    return user_id is not None and user_id in _admin_user_ids()
+def _is_admin_user(user_id: int) -> bool:
+    res = user_id in _admin_user_ids()
+    print(f"User {user_id} is admin: {res}")
+    return res
 
 
 def restart_service() -> None:
@@ -144,6 +146,12 @@ def handle_message(message):
 
     bot.send_chat_action(chat_id, 'typing')
     print(f"Message from {message.from_user.id} ({message.from_user.first_name}): {user_msg}")
+
+    if not _is_admin_user(message.from_user.id):
+        msg = f"I am currently not accepting messages other from my admin user in this version. Please come again in our next version! :)"
+        res = bot.send_message(chat_id, msg)
+        print(msg)
+        return
 
     response = send_to_opencode(chat_id, user_msg)
     res = bot.send_message(chat_id, response)
