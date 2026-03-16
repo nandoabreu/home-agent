@@ -142,7 +142,7 @@ def handle_message(message):
     chat_id = message.chat.id
     user_msg = message.text
 
-    bot.send_message(chat_id, "Working on it...")
+    bot.send_chat_action(chat_id, 'typing')
     print(f"Message from {message.from_user.id} ({message.from_user.first_name}): {user_msg}")
 
     response = send_to_opencode(chat_id, user_msg)
