@@ -64,22 +64,27 @@ You can discover your Telegram user ID by sending this command to the bot:
 
 ### Install the user service
 
-Copy the service file into your user `systemd` directory:
+Copy the service files into your user `systemd` directory:
 
 ```bash
 mkdir -p ~/.config/systemd/user
-cp systemd/home-agent.service ~/.config/systemd/user/home-agent.service
+ln -sf /home/repos/home-agent/systemd/home-agent.service ~/.config/systemd/user/home-agent.service
+ln -sf /home/repos/home-agent/systemd/opencode-server.service ~/.config/systemd/user/opencode-server.service
 ```
 
 If Poetry is installed elsewhere, update `ExecStart` in `systemd/home-agent.service` first.
 
-The provided service file also loads environment variables from `%h/repos/home-agent/.env`.
+The provided service files also load environment variables from `%h/repos/home-agent/.env`.
 
-Then enable and start the service:
+Then enable and start the services:
 
 ```bash
 systemctl --user daemon-reload
-systemctl --user enable --now home-agent.service
+systemctl --user enable opencode-server.service home-agent.service
+systemctl --user start opencode-server.service home-agent.service
+systemctl --user status opencode-server home-agent
+journalctl --user -u opencode-server -e
+journalctl --user -u home-agent -e
 ```
 
 To keep user services available after logout, enable lingering once:

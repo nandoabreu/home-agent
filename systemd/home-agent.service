@@ -1,7 +1,8 @@
 [Unit]
 Description=Home Agent Telegram Bot
-After=network-online.target
+After=network-online.target opencode-server.service
 Wants=network-online.target
+PartOf=opencode-server.service
 
 [Service]
 Type=simple

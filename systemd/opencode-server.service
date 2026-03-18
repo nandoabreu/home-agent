@@ -1,0 +1,15 @@
+[Unit]
+Description=Opencode Server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin:/bin:/home/nando/.opencode/bin
+WorkingDirectory=%h/repos/home-agent
+ExecStart=/home/nando/.opencode/bin/opencode serve --port 4096 --hostname 127.0.0.1
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

@@ -1,5 +1,4 @@
 import subprocess
-import time
 from pathlib import Path
 import shlex
 
@@ -7,13 +6,14 @@ import requests
 import telebot
 
 from telegram_reader.config import settings
+from telegram_reader.opencode_client import (
+    _base_url,
+    ensure_opencode_server,
+    is_opencode_server_active,
+)
 
 _sessions: dict[int, str] = {}
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-
-
-def _base_url() -> str:
-    return settings.opencode_server_url.rstrip("/")
 
 
 def _admin_user_ids() -> set[int]:
@@ -37,43 +37,6 @@ def restart_service() -> None:
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )
-
-
-def wait_for_opencode_server(timeout: int = 30) -> bool:
-    url = f"{_base_url()}/global/health"
-    start = time.time()
-    while time.time() - start < timeout:
-        try:
-            r = requests.get(url, timeout=2)
-            if r.status_code == 200:
-                return True
-        except requests.exceptions.RequestException:
-            pass
-        time.sleep(1)
-    return False
-
-
-def start_opencode_server():
-    from urllib.parse import urlparse
-
-    parsed = urlparse(settings.opencode_server_url)
-    host = parsed.hostname or "127.0.0.1"
-    port = parsed.port or 4096
-
-    log_file_path = PROJECT_ROOT / "opencode_server.log"
-    pointer = open(Path(log_file_path), "wb") if settings.debug_mode else subprocess.DEVNULL
-
-    proc = subprocess.Popen(
-        ["opencode", "serve", "--port", str(port), "--hostname", host],
-        stdout=pointer,
-        stderr=subprocess.STDOUT,
-        cwd=PROJECT_ROOT,
-    )
-    
-    if not wait_for_opencode_server():
-        proc.kill()
-        raise RuntimeError("Opencode server failed to start")
-    return proc
 
 
 def _get_or_create_session(chat_id: int) -> str:
@@ -159,9 +122,13 @@ def handle_message(message):
 
 
 if __name__ == "__main__":
-    print("Starting opencode server...")
-    opencode_proc = start_opencode_server()
-    print(f"Opencode server running at {settings.opencode_server_url}")
+    if is_opencode_server_active():
+        print("Opencode server is already running via systemd.")
+    else:
+        print("Opencode server is not running. Attempting to start...")
+        if not ensure_opencode_server():
+            raise RuntimeError("Failed to start opencode server")
+        print(f"Opencode server started at {settings.opencode_server_url}")
 
     print("Starting Telegram bot...")
     bot.polling()
